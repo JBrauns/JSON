@@ -3,7 +3,13 @@
     "Number" : 42,
     "Float"  : 1234.5678,
     "Array"  : [
-	"N0" : 0,
-	"N2" : 1
-    ]
+	"Entry1" : 1,
+	"Entry0" : 0,
+	"Entry2" : 2
+    ],
+    "Object" : {
+	"Member0" : 1,
+	"Member1" : 2,
+	"Member2" : 3,
+    }
 }

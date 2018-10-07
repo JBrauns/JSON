@@ -35,8 +35,8 @@ bool JSONParser::Parse(JSONObject *parent)
                 token = GetNextToken();
                 if(token.Type == TokenType_DoubleQuotationMark)
                 {
-                    object->Type   = JSONValue_String;
                     object->String = ParseString(token);
+                    object->Type   = JSONValue_String;
                     parent->InsertChild(object);
                 }
                 else if(token.Type == TokenType_Number)
@@ -79,7 +79,7 @@ bool JSONParser::Parse(JSONObject *parent)
         }
         else
         {
-            LogMessage("TokenType: %d", token.Type);
+            // LogMessage("TokenType: %d", token.Type);
         }
             
         token = GetNextToken();

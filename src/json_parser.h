@@ -32,9 +32,7 @@ struct JSONObject
     char *Key;
     JSONValueType Type;
     
-    unsigned int ChildCount;
-    JSONObject *FirstChild;
-    JSONObject *LastChild;
+    JSONObject *Sentinel;
 
     JSONObject *Next;
     JSONObject *Prev;
@@ -51,60 +49,68 @@ struct JSONObject
         Key = key;
         Type = JsonValue_Undefined;
     
-        ChildCount = 0;
-        FirstChild = LastChild = 0;
+        Sentinel = 0;
         Next = Prev = 0;
     }
+    
     ~JSONObject()
     {
         if(Key) { free(Key); }
         if(Type == JSONValue_String) { free(String); }
         
-        JSONObject *child = FirstChild;
-        while(ChildCount > 0)
+        if(Sentinel)
         {
-            if(!child)
+            JSONObject *child = Sentinel->Next;
+            while(true)
             {
-                break;
+                JSONObject *nextChild = child->Next;
+                
+                delete child;
+                if(nextChild == Sentinel)
+                {
+                    break;
+                }
+                child = nextChild;
             }
-
-            JSONObject *nextChild = child->Next;
-            delete child;
-            child = nextChild;
-            
-            --ChildCount;
+            delete Sentinel;
         }
     }
 
     void InsertChild(JSONObject *child)
     {
-        if(!FirstChild)
+        if(!Sentinel)
         {
-            FirstChild = child;
-            LastChild = child;
-
-            FirstChild->Next = LastChild;
-            LastChild->Prev = FirstChild;
+            unsigned int nameLength = 8;
+            char *name = (char *)malloc(nameLength + 1);
+            strncpy(name, "sentinel", nameLength);
+            name[nameLength] = 0;
+                
+            Sentinel = new JSONObject(name);
+            
+            child->Next = Sentinel;
+            child->Prev = Sentinel;
+            
+            Sentinel->Next = child;
+            Sentinel->Prev = child;
         }
         else
         {
-            LastChild->Next = child;
-            child->Prev = LastChild;
+            child->Next = Sentinel;
+            child->Prev = Sentinel->Prev;
 
-            LastChild = child;
+            Sentinel->Prev->Next = child;
+            Sentinel->Prev = child;
         }
-        
-        ++ChildCount;
     }
-
+    
     JSONObject *GetFirstChild(char *key)
     {
         JSONObject *result = 0;
-        if(FirstChild)
+        if(Sentinel)
         {
-            for(JSONObject *child = FirstChild;
-                child != LastChild;
-                child = result->Next)
+            for(JSONObject *child = Sentinel->Next;
+                child != Sentinel;
+                child = child->Next)
             {
                 if(strcmp(child->Key, key) == 0)
                 {

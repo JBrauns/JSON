@@ -24,12 +24,124 @@ void TestBasic(const char *fileName)
     else
     {
         JSONObject *jsonString = root->GetFirstChild("String");
-        
         ++testCount;
-        if(jsonString->Type != JSONValue_String)
+        if(!jsonString)
         {
             ++failCount;
-            LogMessage("Member String has wrong type!");
+            LogMessage("Member String not found!");
+        }
+        else
+        {
+            ++testCount;
+            if(jsonString->Type != JSONValue_String)
+            {
+                ++failCount;
+                LogMessage("Member String has wrong type!");
+            }
+
+            ++testCount;
+            if(strcmp(jsonString->String, "Hello World!") != 0)
+            {
+                ++failCount;
+                LogMessage("Member String has wrong value!");
+            }
+        }
+        
+        JSONObject *jsonNumber = root->GetFirstChild("Number");
+        ++testCount;
+        if(!jsonNumber)
+        {
+            ++failCount;
+            LogMessage("Member Number not found!");
+        }
+        else
+        {
+            ++testCount;
+            if(jsonNumber->Type != JSONValue_Number)
+            {
+                ++failCount;
+                LogMessage("Member Number has wrong type!");
+            }
+
+            ++testCount;
+            if(jsonNumber->Number != 42.0)
+            {
+                ++failCount;
+                LogMessage("Member Number has wrong value!");
+            }
+        }
+        
+        JSONObject *jsonFloat = root->GetFirstChild("Float");
+        ++testCount;
+        if(!jsonFloat)
+        {
+            ++failCount;
+            LogMessage("Member Float not found!");
+        }
+        else
+        {
+            ++testCount;
+            if(jsonFloat->Type != JSONValue_Number)
+            {
+                ++failCount;
+                LogMessage("Member Float has wrong type!");
+            }
+
+            ++testCount;
+            if(jsonFloat->Number != 1234.5678)
+            {
+                ++failCount;
+                LogMessage("Member Float has wrong value!");
+            }
+        }
+        
+        JSONObject *jsonArray = root->GetFirstChild("Array");
+        ++testCount;
+        if(!jsonArray)
+        {
+            ++failCount;
+            LogMessage("Member Array not found!");
+        }
+        else
+        {
+            ++testCount;
+            if(jsonArray->Type != JSONValue_Array)
+            {
+                ++failCount;
+                LogMessage("Member Array has wrong type!");
+            }
+
+            unsigned int entryIndex = 0;
+            for(JSONObject *entry = jsonArray->Sentinel->Next;
+                entry != jsonArray->Sentinel;
+                entry = entry->Next)
+            {
+                ++testCount;
+                if(entry->Type != JSONValue_Number)
+                {
+                    ++failCount;
+                    LogMessage("Member has wrong type!");
+                }
+
+                ++testCount;
+                if((entryIndex == 0) && (strcmp(entry->Key, "Entry1") != 0) && (entry->Number != 1))
+                {
+                    ++failCount;
+                    LogMessage("Entry1 wrong position!");
+                }
+                else if((entryIndex == 1) && (strcmp(entry->Key, "Entry0") != 0) && (entry->Number != 0))
+                {
+                    ++failCount;
+                    LogMessage("Entry0 wrong position!");
+                }
+                else if((entryIndex == 2) && (strcmp(entry->Key, "Entry2") != 0) && (entry->Number != 2))
+                {
+                    ++failCount;
+                    LogMessage("Entry2 wrong position!");
+                }
+                
+                ++entryIndex;
+            }
         }
     }
 
