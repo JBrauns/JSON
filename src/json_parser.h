@@ -112,7 +112,7 @@ class JSONParser :
     public Tokenizer
 {
 public:
-    JSONParser(std::string fileName) :
+    JSONParser(const char *fileName) :
             Tokenizer(fileName, JSON_IDENTIFIER_COMPONENTS) {}
     ~JSONParser() {}
 
