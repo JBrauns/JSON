@@ -57,32 +57,22 @@ struct JSONObject
     }
     ~JSONObject()
     {
-        if(Key)
-        {
-            LogMessage("Destruct: key=%s", Key);
-            free(Key);
-        }
-        if((Type == JSONValue_String) || (Type == JSONValue_Array))
-        {
-            free(String);
-        }
+        if(Key) { free(Key); }
+        if(Type == JSONValue_String) { free(String); }
         
-        if(ChildCount > 0)
+        JSONObject *child = FirstChild;
+        while(ChildCount > 0)
         {
-            JSONObject *child = FirstChild;
-            while(ChildCount > 0)
+            if(!child)
             {
-                if(!child)
-                {
-                    break;
-                }
-
-                JSONObject *nextChild = child->Next;
-                delete child;
-                child = nextChild;
-            
-                --ChildCount;
+                break;
             }
+
+            JSONObject *nextChild = child->Next;
+            delete child;
+            child = nextChild;
+            
+            --ChildCount;
         }
     }
 
@@ -105,6 +95,26 @@ struct JSONObject
         }
         
         ++ChildCount;
+    }
+
+    JSONObject *GetFirstChild(char *key)
+    {
+        JSONObject *result = 0;
+        if(FirstChild)
+        {
+            for(JSONObject *child = FirstChild;
+                child != LastChild;
+                child = result->Next)
+            {
+                if(strcmp(child->Key, key) == 0)
+                {
+                    result = child;
+                    break;
+                }
+            }
+        }
+        
+        return(result);
     }
 };
 
