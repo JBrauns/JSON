@@ -23,7 +23,7 @@
 #define TEST_EXPRESSION(expr, testName)                     \
     {                                                       \
         ++testCount;                                        \
-        if(expr)                                            \
+        if(!(expr))                                         \
         {                                                   \
             ++failCount;                                    \
             LogMessage("Test failed >> '%s'", testName);    \

@@ -12,5 +12,5 @@ popd
 IF NOT EXIST ..\data mkdir ..\data
 
 pushd ..\data
-REM ..\build\json_test.exe
+..\build\json_test.exe
 popd
