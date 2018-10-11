@@ -62,17 +62,20 @@ JSONObject *JSONObject::InsertChild(JSONObject *element)
 JSONObject *JSONObject::RemoveChild()
 {
     JSONObject *result = Sentinel;
-    if(Sentinel->Next == Sentinel)
+    if(Sentinel)
     {
-        AssertMsg(Sentinel->Prev == Sentinel, "Double linked list inconsistent!");
-        Sentinel = 0;
-    }
-    else
-    {
-        Sentinel->Next->Prev = Sentinel->Prev;
-        Sentinel->Prev->Next = Sentinel->Next;
+        if(Sentinel->Next == Sentinel)
+        {
+            AssertMsg(Sentinel->Prev == Sentinel, "Double linked list inconsistent!");
+            Sentinel = 0;
+        }
+        else
+        {
+            Sentinel->Next->Prev = Sentinel->Prev;
+            Sentinel->Prev->Next = Sentinel->Next;
 
-        Sentinel = Sentinel->Next;
+            Sentinel = Sentinel->Next;
+        }
     }
     
     return(result);

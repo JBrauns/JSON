@@ -6,14 +6,21 @@
    $Notice: $
    ======================================================================== */
 
-bool JSONParser::Parse(JSONObject *parent)
+bool JSONParser::Parse(JSONObject **parentPtr)
 {
     bool result = true;
+    JSONObject *parent = *parentPtr;
         
     Token token = GetNextJsonToken();
 
     JSONObject *keyValuePair = 0;
     bool inValueParsing = false;
+
+    bool inArray = false;
+    if(parent && parent->Type == JSONValue_Array)
+    {
+        inArray = true;
+    }
     
     while((token.Type != TokenType_Undefined) && (token.Type != TokenType_EndOfStream))
     {
@@ -21,25 +28,18 @@ bool JSONParser::Parse(JSONObject *parent)
         {
             if(!parent)
             {
-                LogMessage("Init root");
-            
-                parent = new JSONObject(StringToHeapMem("root"));
+                *parentPtr = new JSONObject(StringToHeapMem("root"));
+                parent = *parentPtr;
                 parent->Type = JSONValue_Object;
 
-                this->Parse(parent);
+                this->Parse(parentPtr);
             }
             else
             {
                 if(inValueParsing)
                 {
-                    LogMessage("Value is object");
-                    
                     keyValuePair->Type = JSONValue_Object;
-                    result = this->Parse(keyValuePair);
-                    if(result)
-                    {
-                        parent->InsertChild(keyValuePair);
-                    }
+                    result = this->Parse(&keyValuePair);
                 }
                 else
                 {
@@ -52,18 +52,12 @@ bool JSONParser::Parse(JSONObject *parent)
         }
         else if(token.Type == TokenType_SquareBracketOpen)
         {
-            LogMessage("TokenType: TokenType_SquareBracketOpen");
-            
             if(parent)
             {
                 if(inValueParsing)
                 {
                     keyValuePair->Type = JSONValue_Array;
-                    result = this->Parse(keyValuePair);
-                    if(result)
-                    {
-                        parent->InsertChild(keyValuePair);
-                    }
+                    result = this->Parse(&keyValuePair);
                 }
                 else
                 {
@@ -82,11 +76,19 @@ bool JSONParser::Parse(JSONObject *parent)
         }
         else if(token.Type == TokenType_Colon)
         {
-            LogMessage("TokenType: TokenType_Colon");
             inValueParsing = true;
         }
         else if(token.Type == TokenType_Comma)
         {
+            if(inArray)
+            {
+                parent->InsertChildLast(keyValuePair);
+            }
+            else
+            {
+                parent->InsertChild(keyValuePair);
+            }
+            
             inValueParsing = false;
         }
         else if(token.Type == TokenType_String)
@@ -97,7 +99,6 @@ bool JSONParser::Parse(JSONObject *parent)
                 {
                     keyValuePair->String = token.Text;
                     keyValuePair->Type = JSONValue_String;
-                    parent->InsertChild(keyValuePair);
                 }
                 else
                 {
@@ -120,7 +121,6 @@ bool JSONParser::Parse(JSONObject *parent)
                 {
                     keyValuePair->Number = atof(token.Text);
                     keyValuePair->Type = JSONValue_Number;
-                    parent->InsertChild(keyValuePair);
                 }
                 else
                 {
@@ -162,7 +162,6 @@ bool JSONParser::Parse(JSONObject *parent)
                     }
                     
                     keyValuePair->Type = JSONValue_Literal;
-                    parent->InsertChild(keyValuePair);
                 }
                 else
                 {
@@ -185,6 +184,18 @@ bool JSONParser::Parse(JSONObject *parent)
         }
         else if(token.Type == TokenType_CurlyBracketClose)
         {
+            if(keyValuePair && inValueParsing)
+            {
+                if(inArray)
+                {
+                    parent->InsertChildLast(keyValuePair);
+                }
+                else
+                {
+                    parent->InsertChild(keyValuePair);
+                }
+            }
+            
             result = true;
             break;
         }

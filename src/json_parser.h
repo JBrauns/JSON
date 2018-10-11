@@ -18,7 +18,7 @@ public:
     ~JSONParser() {}
 
     //! Parse the complete json file into a json root object
-    bool Parse(JSONObject *parent);
+    bool Parse(JSONObject **parent);
 
     //! Expecially for string handling
     Token GetNextJsonToken();
