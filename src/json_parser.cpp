@@ -14,9 +14,10 @@ bool JSONParser::Parse(JSONObject **parentPtr)
     Token token = GetNextJsonToken();
 
     JSONObject *keyValuePair = 0;
-    bool inValueParsing = false;
-
+    bool isValue = false;
+    bool isNegative = false;
     bool inArray = false;
+    
     if(parent && parent->Type == JSONValue_Array)
     {
         inArray = true;
@@ -36,7 +37,7 @@ bool JSONParser::Parse(JSONObject **parentPtr)
             }
             else
             {
-                if(inValueParsing)
+                if(isValue)
                 {
                     keyValuePair->Type = JSONValue_Object;
                     result = this->Parse(&keyValuePair);
@@ -54,17 +55,25 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         {
             if(parent)
             {
-                if(inValueParsing)
+                if(isValue)
                 {
-                    keyValuePair->Type = JSONValue_Array;
-                    result = this->Parse(&keyValuePair);
+                    if(isValue)
+                    {
+                        keyValuePair->Type = JSONValue_Array;
+                        result = this->Parse(&keyValuePair);
+                    }
+                    else
+                    {
+                        LogMessage("ERROR >> JSON array cannot be a key");
+                        result = false;
+                    }
                 }
                 else
                 {
-                    LogMessage("ERROR >> JSON array cannot be a key");
+                    LogMessage("ERROR >> JSON array cannot be negative");
                     result = false;
                 }
-                
+                    
                 if(!result) { break; }
             }
             else
@@ -76,7 +85,7 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         }
         else if(token.Type == TokenType_Colon)
         {
-            inValueParsing = true;
+            isValue = true;
         }
         else if(token.Type == TokenType_Comma)
         {
@@ -89,13 +98,14 @@ bool JSONParser::Parse(JSONObject **parentPtr)
                 parent->InsertChild(keyValuePair);
             }
             
-            inValueParsing = false;
+            isValue = false;
+            isNegative = false;
         }
         else if(token.Type == TokenType_String)
         {
             if(parent)
             {
-                if(inValueParsing)
+                if(isValue)
                 {
                     keyValuePair->String = token.Text;
                     keyValuePair->Type = JSONValue_String;
@@ -117,10 +127,15 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         {
             if(parent)
             {
-                if(inValueParsing)
+                if(isValue)
                 {
                     keyValuePair->Number = atof(token.Text);
                     keyValuePair->Type = JSONValue_Number;
+                    if(isNegative)
+                    {
+                        keyValuePair->Number *= -1.0;
+                        isNegative = false;
+                    }
                 }
                 else
                 {
@@ -140,32 +155,40 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         {
             if(parent)
             {
-                if(inValueParsing)
+                if(isNegative)
                 {
-                    if(strncmp("true", token.Text, strlen(token.Text)) == 0)
+                    if(isValue)
                     {
-                        keyValuePair->Literal = JSONLiteral_True;
-                    }
-                    else if(strncmp("false", token.Text, strlen(token.Text)) == 0)
-                    {
-                        keyValuePair->Literal = JSONLiteral_False;
-                    }
-                    else if(strncmp("null", token.Text, strlen(token.Text)) == 0)
-                    {
-                        keyValuePair->Literal = JSONLiteral_Null;
+                        if(strncmp("true", token.Text, strlen(token.Text)) == 0)
+                        {
+                            keyValuePair->Literal = JSONLiteral_True;
+                        }
+                        else if(strncmp("false", token.Text, strlen(token.Text)) == 0)
+                        {
+                            keyValuePair->Literal = JSONLiteral_False;
+                        }
+                        else if(strncmp("null", token.Text, strlen(token.Text)) == 0)
+                        {
+                            keyValuePair->Literal = JSONLiteral_Null;
+                        }
+                        else
+                        {
+                            keyValuePair->Literal = JSONLiteral_Invalid;
+                            LogMessage("ERROR >> Invalid literal '%s' [true|false|null]", token.Text);
+                            result = false;
+                        }
+                    
+                        keyValuePair->Type = JSONValue_Literal;
                     }
                     else
                     {
-                        keyValuePair->Literal = JSONLiteral_Invalid;
-                        LogMessage("ERROR >> Invalid literal '%s' [true|false|null]", token.Text);
+                        LogMessage("ERROR >> Identifier cannot be value");
                         result = false;
                     }
-                    
-                    keyValuePair->Type = JSONValue_Literal;
                 }
                 else
                 {
-                    LogMessage("ERROR >> Identifier cannot be value");
+                    LogMessage("ERROR >> Identifier cannot be negative");
                     result = false;
                 }
             }
@@ -184,24 +207,36 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         }
         else if(token.Type == TokenType_CurlyBracketClose)
         {
-            if(keyValuePair && inValueParsing)
+            if(!isNegative)
             {
-                if(inArray)
+                if(keyValuePair && isValue)
                 {
-                    parent->InsertChildLast(keyValuePair);
-                }
-                else
-                {
-                    parent->InsertChild(keyValuePair);
+                    if(inArray)
+                    {
+                        parent->InsertChildLast(keyValuePair);
+                    }
+                    else
+                    {
+                        parent->InsertChild(keyValuePair);
+                    }
+                    result = true;
                 }
             }
+            else
+            {
+                LogMessage("ERROR >> Unhandled minus detected");
+                result = false;
+            }
             
-            result = true;
             break;
+        }
+        else if(token.Type == TokenType_Minus)
+        {
+            isNegative = true;
         }
         else
         {
-            // LogMessage("TokenType: %d", token.Type);
+            LogMessage("ERROR >> Unhandled token");
         }
         
         token = GetNextJsonToken();

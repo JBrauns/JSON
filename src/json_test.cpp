@@ -19,13 +19,8 @@ void TestBasic(const char *fileName)
     JSONParser *parser = new JSONParser(fileName);
     JSONObject *root = 0;
     
-    ++testCount;
-    if(!parser->Parse(&root))
-    {
-        ++failCount;
-        LogMessage("ERROR >> Failed to parse test file!");
-    }
-    else
+    TEST_EXPRESSION((!parser->Parse(&root)), "Root Retrieval");
+    if(root)
     {
         JSONObject *jsonString = root->GetFirstChild("String");
         TEST_EXPRESSION((!jsonString), "String Retrieval");
