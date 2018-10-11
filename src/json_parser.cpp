@@ -155,10 +155,11 @@ bool JSONParser::Parse(JSONObject **parentPtr)
         {
             if(parent)
             {
-                if(isNegative)
+                if(!isNegative)
                 {
                     if(isValue)
                     {
+                        keyValuePair->Type = JSONValue_Literal;
                         if(strncmp("true", token.Text, strlen(token.Text)) == 0)
                         {
                             keyValuePair->Literal = JSONLiteral_True;
@@ -177,8 +178,6 @@ bool JSONParser::Parse(JSONObject **parentPtr)
                             LogMessage("ERROR >> Invalid literal '%s' [true|false|null]", token.Text);
                             result = false;
                         }
-                    
-                        keyValuePair->Type = JSONValue_Literal;
                     }
                     else
                     {
@@ -230,7 +229,7 @@ bool JSONParser::Parse(JSONObject **parentPtr)
             
             break;
         }
-        else if(token.Type == TokenType_Minus)
+        else if(TokenType_Minus == token.Type)
         {
             isNegative = true;
         }
@@ -258,7 +257,7 @@ Token JSONParser::GetNextJsonToken()
         result.Type = TokenType_String;
         result.Text = _StringToHeapMem(stringStart, stringLength);
     }
-    else if(result.Type == TokenType_Number)
+    else if((result.Type == TokenType_Number) || (result.Type == TokenType_Identifier))
     {
         result.Text = _StringToHeapMem(result.Text, result.Length);
     }

@@ -9,8 +9,8 @@
 	"Entry2" : 2
     ],
     "Object" : {
-	"Member0" : 1,
-	"Member1" : 2,
-	"Member2" : 3,
+	"Member0" : true,
+	"Member1" : false,
+	"Member2" : null
     }
 }

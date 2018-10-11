@@ -87,6 +87,42 @@ void TestBasic(const char *fileName)
                 ++entryIndex;
             }
         }
+        
+        JSONObject *jsonObject = root->GetFirstChild("Object");
+        TEST_EXPRESSION((!jsonObject), "Object Retrieval");
+        if(jsonObject)
+        {
+            TEST_EXPRESSION((jsonObject->Type != JSONValue_Object), "Object Type");
+
+            int expectedMembers = 3;
+            for(JSONObject *entry = jsonObject->GetFirstChild();
+                entry;
+                entry = jsonObject->IterateAllOnce(entry))
+            {
+                if(strcmp(entry->Key, "Member0") == 0)
+                {
+                    --expectedMembers;
+                    TEST_EXPRESSION((entry->Type != JSONValue_Literal), "Member0 Type");
+                    TEST_EXPRESSION((entry->Literal != JSONLiteral_True), "Member0 Value");
+                }
+
+                if(strcmp(entry->Key, "Member1") == 0)
+                {
+                    --expectedMembers;
+                    TEST_EXPRESSION((entry->Type != JSONValue_Literal), "Member1 Type");
+                    TEST_EXPRESSION((entry->Literal != JSONLiteral_False), "Member1 Value");
+                }
+
+                if(strcmp(entry->Key, "Member2") == 0)
+                {
+                    --expectedMembers;
+                    TEST_EXPRESSION((entry->Type != JSONValue_Literal), "Member2 Type");
+                    TEST_EXPRESSION((entry->Literal != JSONLiteral_Null), "Member2 Value");
+                }
+            }
+
+            TEST_EXPRESSION((expectedMembers != 0), "Object Member Count");
+        }
     }
 
     LogMessage("Test finished: Failed=%d Passed=%d from total %d",
