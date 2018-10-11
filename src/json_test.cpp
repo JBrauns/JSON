@@ -8,6 +8,7 @@
 
 #include "json_test.h"
 #include "tokenizer.cpp"
+#include "json_object.cpp"
 #include "json_parser.cpp"
 
 void TestBasic(const char *fileName)
@@ -16,10 +17,13 @@ void TestBasic(const char *fileName)
     unsigned int failCount = 0;
     
     JSONParser *parser = new JSONParser(fileName);
-    JSONObject *root = parser->GetRoot();
+    JSONObject *root = 0;
+    
+    ++testCount;
     if(!parser->Parse(root))
     {
-        LogMessage("ERROR >> Failed to open test file!");
+        ++failCount;
+        LogMessage("ERROR >> Failed to parse test file!");
     }
     else
     {
@@ -112,9 +116,9 @@ void TestBasic(const char *fileName)
             }
 
             unsigned int entryIndex = 0;
-            for(JSONObject *entry = jsonArray->Sentinel->Next;
-                entry != jsonArray->Sentinel;
-                entry = entry->Next)
+            for(JSONObject *entry = jsonArray->GetFirstChild();
+                entry;
+                entry = jsonArray->IterateAllOnce(entry))
             {
                 ++testCount;
                 if(entry->Type != JSONValue_Number)

@@ -26,6 +26,7 @@ enum TokenType
     TokenType_Undefined,
 
     TokenType_Identifier,
+    TokenType_String,
     
     TokenType_SquareBracketOpen,
     TokenType_SquareBracketClose,

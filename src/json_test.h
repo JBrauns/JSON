@@ -15,20 +15,9 @@
 
 #define internal static
 
-internal void
-LogMessage(char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-
-    printf("Message: ");
-    vprintf(fmt, args);
-    printf("\n");
-
-    va_end(args);
-}
-
+#include "json_platform.h"
 #include "tokenizer.h"
+#include "json_object.h"
 #include "json_parser.h"
 
 #define JSON_TEST_H
