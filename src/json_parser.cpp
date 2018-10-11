@@ -15,7 +15,7 @@ bool JSONParser::Parse(JSONObject *parent)
     JSONObject *keyValuePair = 0;
     bool inValueParsing = false;
     
-    while((token.Type != TokenType_Undefined) || (token.Type != TokenType_EndOfStream))
+    while((token.Type != TokenType_Undefined) && (token.Type != TokenType_EndOfStream))
     {
         if(token.Type == TokenType_CurlyBracketOpen)
         {
