@@ -1,6 +1,7 @@
 {
     "String" : "Hello World!",
-    "Number" : 42,
+    "IntPos" : 42,
+    "IntNeg" : -3458,
     "Float"  : 1234.5678,
     "Array"  : [
 	"Entry1" : 1,

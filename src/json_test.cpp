@@ -20,7 +20,7 @@ void TestBasic(const char *fileName)
     JSONObject *root = 0;
     
     ++testCount;
-    if(!parser->Parse(root))
+    if(!parser->Parse(&root))
     {
         ++failCount;
         LogMessage("ERROR >> Failed to parse test file!");
@@ -28,120 +28,65 @@ void TestBasic(const char *fileName)
     else
     {
         JSONObject *jsonString = root->GetFirstChild("String");
-        ++testCount;
-        if(!jsonString)
+        TEST_EXPRESSION((!jsonString), "String Retrieval");
+        if(jsonString)
         {
-            ++failCount;
-            LogMessage("Member String not found!");
-        }
-        else
-        {
-            ++testCount;
-            if(jsonString->Type != JSONValue_String)
-            {
-                ++failCount;
-                LogMessage("Member String has wrong type!");
-            }
-
-            ++testCount;
-            if(strcmp(jsonString->String, "Hello World!") != 0)
-            {
-                ++failCount;
-                LogMessage("Member String has wrong value!");
-            }
+            TEST_EXPRESSION((jsonString->Type != JSONValue_String), "String Type");
+            TEST_EXPRESSION(strcmp(jsonString->String, "Hello World!") != 0, "String Value");
         }
         
-        JSONObject *jsonNumber = root->GetFirstChild("Number");
-        ++testCount;
-        if(!jsonNumber)
+        JSONObject *jsonIntNeg = root->GetFirstChild("IntNeg");
+        TEST_EXPRESSION((!jsonIntNeg), "IntNeg Retrieval");
+        if(jsonIntNeg)
         {
-            ++failCount;
-            LogMessage("Member Number not found!");
+            TEST_EXPRESSION((jsonIntNeg->Type != JSONValue_Number), "IntNeg Type");
+            TEST_EXPRESSION(((int)jsonIntNeg->Number != -3458), "IntNeg Value");
         }
-        else
+        
+        JSONObject *jsonIntPos = root->GetFirstChild("IntPos");
+        TEST_EXPRESSION((!jsonIntPos), "IntPos Retrieval");
+        if(jsonIntPos)
         {
-            ++testCount;
-            if(jsonNumber->Type != JSONValue_Number)
-            {
-                ++failCount;
-                LogMessage("Member Number has wrong type!");
-            }
-
-            ++testCount;
-            if(jsonNumber->Number != 42.0)
-            {
-                ++failCount;
-                LogMessage("Member Number has wrong value!");
-            }
+            TEST_EXPRESSION((jsonIntPos->Type != JSONValue_Number), "IntPos Type");
+            TEST_EXPRESSION(((int)jsonIntPos->Number != 42), "IntPos Value");
         }
         
         JSONObject *jsonFloat = root->GetFirstChild("Float");
-        ++testCount;
-        if(!jsonFloat)
+        TEST_EXPRESSION((!jsonFloat), "Float Retrieval");
+        if(jsonFloat)
         {
-            ++failCount;
-            LogMessage("Member Float not found!");
-        }
-        else
-        {
-            ++testCount;
-            if(jsonFloat->Type != JSONValue_Number)
-            {
-                ++failCount;
-                LogMessage("Member Float has wrong type!");
-            }
-
-            ++testCount;
-            if(jsonFloat->Number != 1234.5678)
-            {
-                ++failCount;
-                LogMessage("Member Float has wrong value!");
-            }
+            TEST_EXPRESSION((jsonFloat->Type != JSONValue_Number), "Float Type");
+            TEST_EXPRESSION((jsonFloat->Number != 1234.5678), "Float Value");
         }
         
         JSONObject *jsonArray = root->GetFirstChild("Array");
-        ++testCount;
-        if(!jsonArray)
+        TEST_EXPRESSION((!jsonArray), "Array Retrieval");
+        if(jsonArray)
         {
-            ++failCount;
-            LogMessage("Member Array not found!");
-        }
-        else
-        {
-            ++testCount;
-            if(jsonArray->Type != JSONValue_Array)
-            {
-                ++failCount;
-                LogMessage("Member Array has wrong type!");
-            }
+            TEST_EXPRESSION((jsonArray->Type != JSONValue_Array), "Array Type");
 
             unsigned int entryIndex = 0;
             for(JSONObject *entry = jsonArray->GetFirstChild();
                 entry;
                 entry = jsonArray->IterateAllOnce(entry))
             {
-                ++testCount;
-                if(entry->Type != JSONValue_Number)
+                if(entryIndex == 0)
                 {
-                    ++failCount;
-                    LogMessage("Member has wrong type!");
+                    TEST_EXPRESSION((entry->Type != JSONValue_Number), "Entry1 Type");
+                    TEST_EXPRESSION((strcmp(entry->Key, "Entry1") != 0), "Entry1 Positioning");
+                    TEST_EXPRESSION((entry->Number != 1), "Entry1 Value");
                 }
-
-                ++testCount;
-                if((entryIndex == 0) && (strcmp(entry->Key, "Entry1") != 0) && (entry->Number != 1))
+                else if(entryIndex == 1)
                 {
-                    ++failCount;
-                    LogMessage("Entry1 wrong position!");
+                    TEST_EXPRESSION((entry->Type != JSONValue_Number), "Entry1 Type");
+                    TEST_EXPRESSION((strcmp(entry->Key, "Entry0") != 0), "Entry0 Positioning");
+                    TEST_EXPRESSION((entry->Number != 0), "Entry0 Value");
                 }
-                else if((entryIndex == 1) && (strcmp(entry->Key, "Entry0") != 0) && (entry->Number != 0))
+                else if(entryIndex == 2)
                 {
-                    ++failCount;
-                    LogMessage("Entry0 wrong position!");
-                }
-                else if((entryIndex == 2) && (strcmp(entry->Key, "Entry2") != 0) && (entry->Number != 2))
-                {
-                    ++failCount;
-                    LogMessage("Entry2 wrong position!");
+                    TEST_EXPRESSION((entry->Type != JSONValue_Number), "Entry2 Type");
+                    TEST_EXPRESSION((strcmp(entry->Key, "Entry2") != 0), "Entry2 Positioning");
+                    TEST_EXPRESSION((entry->Number != 2), "Entry2 Value");
                 }
                 
                 ++entryIndex;
