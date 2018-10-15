@@ -95,9 +95,8 @@ void TestBasic(const char *fileName)
             TEST_EXPRESSION((jsonObject->Type == JSONValue_Object), "Object Type");
 
             int expectedMembers = 3;
-            for(JSONObject *entry = jsonObject->GetFirstChild();
-                entry;
-                entry = jsonObject->IterateAllOnce(entry))
+            JSONObject *entry = jsonObject->GetFirstChild();
+            while(entry)
             {
                 if(strcmp(entry->Key, "Member0") == 0)
                 {
@@ -119,6 +118,8 @@ void TestBasic(const char *fileName)
                     TEST_EXPRESSION((entry->Type == JSONValue_Literal), "Member2 Type");
                     TEST_EXPRESSION((entry->Literal == JSONLiteral_Null), "Member2 Value");
                 }
+                
+                entry = jsonObject->GetNextChild();
             }
 
             TEST_EXPRESSION((expectedMembers == 0), "Object Member Count");

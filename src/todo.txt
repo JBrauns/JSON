@@ -1,0 +1,3 @@
+# Add array subscript operator to the JSONObject for arrays
+  - Not sure how to react on not array types...
+# Maybe it is better to distinguish between array and object!

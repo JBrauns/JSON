@@ -122,7 +122,8 @@ JSONObject *JSONObject::GetFirstChild(char *key)
 JSONObject *JSONObject::GetFirstChild()
 {
     JSONObject *result = Sentinel;
-
+    MostRecentChild = result->Next;
+    
     return(result);
 }
 
@@ -140,3 +141,19 @@ JSONObject *JSONObject::IterateAllOnce(JSONObject *child)
         
     return(result);
 }
+
+JSONObject *JSONObject::GetNextChild()
+{
+    JSONObject *result = 0;
+    if(MostRecentChild)
+    {
+        if(MostRecentChild != Sentinel)
+        {
+            result = MostRecentChild;
+            MostRecentChild = result->Next;
+        }
+    }
+        
+    return(result);
+}
+

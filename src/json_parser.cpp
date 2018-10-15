@@ -199,12 +199,7 @@ bool JSONParser::Parse(JSONObject **parentPtr)
             
             if(!result) { break; }
         }
-        else if(token.Type == TokenType_SquareBracketClose)
-        {
-            result = true;
-            break;
-        }
-        else if(token.Type == TokenType_CurlyBracketClose)
+        else if((token.Type == TokenType_CurlyBracketClose) || (token.Type == TokenType_SquareBracketClose))
         {
             if(!isNegative)
             {

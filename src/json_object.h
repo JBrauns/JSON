@@ -49,6 +49,7 @@ struct JSONObject
     JSONValueType Type;
     
     JSONObject *Sentinel;
+    JSONObject *MostRecentChild;
 
     JSONObject *Next;
     JSONObject *Prev;
@@ -86,6 +87,9 @@ struct JSONObject
 
     //! Iterate over all objects up to the sentinel in next direction. Receive first element wit GetFirstChild. Will return null if sentinel is reached
     JSONObject *IterateAllOnce(JSONObject *element);
+
+    //! Subsequent call this after a call to GetFirstChild. Will return the next children up to the last from then on null
+    JSONObject *GetNextChild();
 };
 
 #define JSON_OBJECT_H
