@@ -1,5 +1,13 @@
-build
+build/*
+misc/*
+data/*
 
+*.bat
+*.emacs
 *.lnk
 *.sln
 *.suo
+*.ilk
+*.json
+*.obj
+*.pdb
