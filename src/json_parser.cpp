@@ -6,237 +6,142 @@
    $Notice: $
    ======================================================================== */
 
-bool JSONParser::Parse(JSONObject **parentPtr)
+bool JSONParser::Parse(JSONObject **parentPtr, bool inObject)
 {
-    bool result = true;
     JSONObject *parent = *parentPtr;
-        
-    Token token = GetNextJsonToken();
-
-    JSONObject *keyValuePair = 0;
-    bool isValue = false;
-    bool isNegative = false;
-    bool inArray = false;
-    
-    if(parent && parent->Type == JSONValue_Array)
+    if(!HasRoot)
     {
-        inArray = true;
+        // TODO(joshua): Error handling!
+        JSON_ASSERT(!parent);
+        HasRoot = true;
+    }
+    else
+    {
+        // TODO(joshua): Error handling!
+        JSON_ASSERT(parent);
     }
     
+    JSONObject *entry = 0;
+        
+    Token token = this->GetNextJsonToken();
     while((token.Type != TokenType_Undefined) && (token.Type != TokenType_EndOfStream))
     {
-        if(token.Type == TokenType_CurlyBracketOpen)
+        switch(token.Type)
         {
-            if(!parent)
+            case TokenType_String:
             {
-                *parentPtr = new JSONObject(StringToHeapMem("root"));
-                parent = *parentPtr;
-                parent->Type = JSONValue_Object;
+                if(!entry)
+                {
+                    entry = new JSONObject(token.Text);
+                            
+                    if(inObject)
+                    {
+                        token = GetNextJsonToken();
+                        // TODO(joshua): Error handling!
+                        JSON_ASSERT(token.Type == TokenType_Colon);
+                    }
+                }
+                else
+                {
+                    entry->String = token.Text;
+                    entry->Type = JSONValue_String;
+                }
+            } break;
 
-                this->Parse(parentPtr);
-            }
-            else
+            case TokenType_Minus:
+            case TokenType_Number:
             {
-                if(isValue)
+                double sign = 1.0;
+                if(TokenType_Minus == token.Type)
                 {
-                    keyValuePair->Type = JSONValue_Object;
-                    result = this->Parse(&keyValuePair);
+                    sign = -1.0;
+                    token = GetNextJsonToken();
+                    // TODO(joshua): Error handling!
+                    JSON_ASSERT(token.Type == TokenType_Number);
+                }
+                            
+                entry->Number = atof(token.Text) * sign;
+                entry->Type = JSONValue_Number;
+            } break;
+
+            case TokenType_Identifier:
+            {
+                entry->Type = JSONValue_Literal;
+                entry->Literal = StringToJSONLiteral(token.Text);
+                // TODO(joshua): Error handling!
+                JSON_ASSERT(entry->Literal != JSONLiteral_Invalid);
+            } break;
+
+            case TokenType_CurlyBracketOpen:
+            {
+                if(!parent)
+                {
+                    *parentPtr = new JSONObject(StringToHeapMem("root"));
+                    (*parentPtr)->Type = JSONValue_Object;
+                    this->Parse(parentPtr, true);
                 }
                 else
                 {
-                    LogMessage("ERROR >> JSON object cannot be a key");
-                    result = false;
-                }
-                
-                if(!result) { break; }
-            }
-        }
-        else if(token.Type == TokenType_SquareBracketOpen)
-        {
-            if(parent)
-            {
-                if(isValue)
-                {
-                    if(isValue)
+                    entry->Type = JSONValue_Object;
+                    if(!this->Parse(&entry))
                     {
-                        keyValuePair->Type = JSONValue_Array;
-                        result = this->Parse(&keyValuePair);
-                    }
-                    else
-                    {
-                        LogMessage("ERROR >> JSON array cannot be a key");
-                        result = false;
+                        LogMessage("ERROR >> While parsing object");
+                        return(false);
                     }
                 }
-                else
+            } break;
+
+            case TokenType_SquareBracketOpen:
+            {
+                entry->Type = JSONValue_Array;
+                if(!this->Parse(&entry, false))
                 {
-                    LogMessage("ERROR >> JSON array cannot be negative");
-                    result = false;
+                    LogMessage("ERROR >> While parsing array");
+                    return(false);
                 }
-                    
-                if(!result) { break; }
-            }
-            else
+            } break;
+
+            default:
             {
-                LogMessage("ERROR >> JSON array not allowed as root");
-                result = false;
-                break;
-            }
+                // NOTE(joshua): This could be a comma after the last entry in an array/object
+                // TODO(joshua): Error handling!
+                LogMessage("ERROR >> Invalid token");
+                JSON_ASSERT(!"Invalid token");
+            } break;
         }
-        else if(token.Type == TokenType_Colon)
-        {
-            isValue = true;
-        }
-        else if(token.Type == TokenType_Comma)
-        {
-            if(inArray)
-            {
-                parent->InsertChildLast(keyValuePair);
-            }
-            else
-            {
-                parent->InsertChild(keyValuePair);
-            }
-            
-            isValue = false;
-            isNegative = false;
-        }
-        else if(token.Type == TokenType_String)
-        {
-            if(parent)
-            {
-                if(isValue)
-                {
-                    keyValuePair->String = token.Text;
-                    keyValuePair->Type = JSONValue_String;
-                }
-                else
-                {
-                    keyValuePair = new JSONObject(token.Text);
-                }
-            }
-            else
-            {
-                LogMessage("ERROR >> String found in NULL scope");
-                result = false;
-            }
-            
-            if(!result) { break; }
-        }
-        else if(token.Type == TokenType_Number)
-        {
-            if(parent)
-            {
-                if(isValue)
-                {
-                    keyValuePair->Number = atof(token.Text);
-                    keyValuePair->Type = JSONValue_Number;
-                    if(isNegative)
-                    {
-                        keyValuePair->Number *= -1.0;
-                        isNegative = false;
-                    }
-                }
-                else
-                {
-                    LogMessage("ERROR >> Number cannot be value");
-                    result = false;
-                }
-            }
-            else
-            {
-                LogMessage("ERROR >> String found in NULL scope");
-                result = false;
-            }
-            
-            if(!result) { break; }
-        }
-        else if(token.Type == TokenType_Identifier)
-        {
-            if(parent)
-            {
-                if(!isNegative)
-                {
-                    if(isValue)
-                    {
-                        keyValuePair->Type = JSONValue_Literal;
-                        if(strncmp("true", token.Text, strlen(token.Text)) == 0)
-                        {
-                            keyValuePair->Literal = JSONLiteral_True;
-                        }
-                        else if(strncmp("false", token.Text, strlen(token.Text)) == 0)
-                        {
-                            keyValuePair->Literal = JSONLiteral_False;
-                        }
-                        else if(strncmp("null", token.Text, strlen(token.Text)) == 0)
-                        {
-                            keyValuePair->Literal = JSONLiteral_Null;
-                        }
-                        else
-                        {
-                            keyValuePair->Literal = JSONLiteral_Invalid;
-                            LogMessage("ERROR >> Invalid literal '%s' [true|false|null]", token.Text);
-                            result = false;
-                        }
-                    }
-                    else
-                    {
-                        LogMessage("ERROR >> Identifier cannot be value");
-                        result = false;
-                    }
-                }
-                else
-                {
-                    LogMessage("ERROR >> Identifier cannot be negative");
-                    result = false;
-                }
-            }
-            else
-            {
-                LogMessage("ERROR >> String found in NULL scope");
-                result = false;
-            }
-            
-            if(!result) { break; }
-        }
-        else if((token.Type == TokenType_CurlyBracketClose) || (token.Type == TokenType_SquareBracketClose))
-        {
-            if(!isNegative)
-            {
-                if(keyValuePair && isValue)
-                {
-                    if(inArray)
-                    {
-                        parent->InsertChildLast(keyValuePair);
-                    }
-                    else
-                    {
-                        parent->InsertChild(keyValuePair);
-                    }
-                    result = true;
-                }
-            }
-            else
-            {
-                LogMessage("ERROR >> Unhandled minus detected");
-                result = false;
-            }
-            
-            break;
-        }
-        else if(TokenType_Minus == token.Type)
-        {
-            isNegative = true;
-        }
-        else
-        {
-            LogMessage("ERROR >> Unhandled token");
-        }
-        
+
         token = GetNextJsonToken();
+        if(TokenType_Comma == token.Type)
+        {
+            if(inObject) { parent->InsertChildLast(entry); }
+            else { parent->InsertChild(entry); }
+            entry = 0;
+
+            token = GetNextJsonToken();
+        }
+        else if(TokenType_SquareBracketClose == token.Type)
+        {
+            if(inObject) { parent->InsertChildLast(entry); }
+            else { parent->InsertChild(entry); }
+            entry = 0;
+
+            // TODO(joshua): Error handling!
+            JSON_ASSERT(!inObject);
+            return(true);
+        }
+        else if(TokenType_CurlyBracketClose == token.Type)
+        {
+            if(inObject) { parent->InsertChildLast(entry); }
+            else { parent->InsertChild(entry); }
+            entry = 0;
+
+            // TODO(joshua): Error handling!
+            JSON_ASSERT(inObject);
+            return(true);
+        }
     }
 
-    return(result);
+    return(true);
 }
 
 Token JSONParser::GetNextJsonToken()

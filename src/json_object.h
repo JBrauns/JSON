@@ -27,6 +27,18 @@ enum JSONLiteral
     JSONLiteral_Null
 };
 
+inline JSONLiteral
+StringToJSONLiteral(char *literal)
+{
+    JSONLiteral result = JSONLiteral_Invalid;
+    
+    if(strcmp("true", literal) == 0) { result = JSONLiteral_True; }
+    else if(strcmp("false", literal) == 0) { result = JSONLiteral_False; }
+    else if(strcmp("null", literal) == 0) { result = JSONLiteral_Null; }
+
+    return(result);
+}
+
 #define StringToHeapMem(string) _StringToHeapMem(string, strlen(string))
 inline char *
 _StringToHeapMem(char *string, unsigned int nameLength)

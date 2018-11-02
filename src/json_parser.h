@@ -18,13 +18,17 @@
 class JSONParser :
     public Tokenizer
 {
+private:
+    bool HasRoot;
+    
 public:
     JSONParser(const char *fileName) :
-            Tokenizer(fileName, JSON_IDENTIFIER_COMPONENTS) {}
+            Tokenizer(fileName, JSON_IDENTIFIER_COMPONENTS),
+            HasRoot(false) {}
     ~JSONParser() {}
 
     //! Parse the complete json file into a json root object
-    bool Parse(JSONObject **parent);
+    bool Parse(JSONObject **parent, bool inObject = true);
 
     //! Expecially for string handling
     Token GetNextJsonToken();
