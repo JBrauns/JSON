@@ -140,7 +140,7 @@ class JsonString(JsonValue, AttribResolver):
 
         self.ID = GlobalTestIDGen.next()
         
-        self.JsonFmt = "\"{0.Key}\" : \"{0.Value}\","
+        self.JsonFmt = "\"{0.Key}\" : \"{0.Value}\""
         
         self.Indent = indent
         self.TestName = testName
@@ -159,7 +159,7 @@ class JsonString(JsonValue, AttribResolver):
             "  if(!s)",
             "  {",
             "    ++<(FailCountName)>;",
-            "    LogMessage(\"Test '<(TestName)>' failed\");",
+            "    LogMessage(\"'<(TestName)>' failed: 'No object <(Key)> found!'\");",
             "  }",
             "  else",
             "  {"
@@ -194,7 +194,7 @@ class JsonNumber(JsonValue, AttribResolver):
         self.ID = GlobalTestIDGen.next()
         
         self.IsReal = real
-        self.JsonFmt = "\"{0.Key}\" : {0.Value:%s}," % ("f" if self.IsReal else "d")
+        self.JsonFmt = "\"{0.Key}\" : {0.Value:%s}" % ("f" if self.IsReal else "d")
         
         self.Indent = indent
         self.TestName = testName
@@ -247,7 +247,7 @@ class JsonLiteral(JsonValue, AttribResolver):
 
         self.ID = GlobalTestIDGen.next()
         
-        self.JsonFmt = "\"{0.Key}\" : {0.Value},"
+        self.JsonFmt = "\"{0.Key}\" : {0.Value}"
         
         self.Indent = indent
         self.TestName = testName
@@ -338,9 +338,11 @@ class JsonRoot(JsonValue, AttribResolver):
         data = []
         data.append('{')
 
+        separator = ""
         for key in self.root:
             for line in self.root[key].ToJSON():
-                data.append(self.Indent*"  " + line)
+                data.append("{0}{1}{2}".format(self.Indent*"  ", separator, line))
+                separator = ","
                 
         data.append('}')
         return data
