@@ -9,6 +9,12 @@
 
 #define JSON_IDENTIFIER_COMPONENTS 0
 
+#if JSON_DEV_MODE
+#define JSON_ASSERT(expr) if(!(expr)) *(int *)0 = 0;
+#else
+#define JSON_ASSERT(expr)
+#endif
+
 class JSONParser :
     public Tokenizer
 {
