@@ -6,10 +6,11 @@
    $Notice: $
    ======================================================================== */
 
+//
+// JSONValue
+//
+
 JSONValue::JSONValue(char *key, size_t keyLength, JSONValueType type)
-        : Sentinel(0),
-          NextChild(0),
-          PrevChild(0)
 {
     KeyLength = keyLength;
     Key = (char *)malloc((KeyLength + 1)*sizeof(char));
@@ -22,16 +23,6 @@ JSONValue::JSONValue(char *key, size_t keyLength, JSONValueType type)
 JSONValue::~JSONValue()
 {
     if(Key) { free(Key); Key = 0; }
-    if(Sentinel)
-    {
-        JSONValue *child = this->RemoveChild();
-        while(child)
-        {
-            delete child;
-            child = 0;
-            child = this->RemoveChild();
-        }
-    }
 }
 
 JSONKeyCompare JSONValue::CompareKey(char *key)
@@ -64,117 +55,100 @@ bool JSONValue::IsKey(char *key)
     return(result);
 }
 
-JSONValue *JSONValue::ChildrenInit(JSONValue *element)
+//
+// JSONString
+//
+inline bool operator==(JSONString &lhs, JSONString *rhs)
 {
-    element->NextChild = element;
-    element->PrevChild = element;
-    Sentinel = element;
-
-    return(element);
-}
-
-JSONValue *JSONValue::InsertChild(JSONValue *element)
-{
-    if(!Sentinel)
+    bool result = false;
+    if(rhs->ValueLength == lhs.ValueLength)
     {
-        this->ChildrenInit(element);
+        result = (strncmp(lhs.Value, rhs->Value, lhs.ValueLength) == 0);
     }
-    else
-    {
-        element->NextChild = Sentinel->NextChild;
-        element->PrevChild = Sentinel;
-
-        element->NextChild->PrevChild = element;
-        element->PrevChild->NextChild = element;
-    }
-
-    return(element);
-}
-
-JSONValue *JSONValue::RemoveChild()
-{
-    JSONValue *result = Sentinel;
-    if(Sentinel)
-    {
-        if(Sentinel->NextChild == Sentinel)
-        {
-            AssertMsg(Sentinel->PrevChild == Sentinel, "Double linked list inconsistent!");
-            Sentinel = 0;
-        }
-        else
-        {
-            Sentinel->NextChild->PrevChild = Sentinel->PrevChild;
-            Sentinel->PrevChild->NextChild = Sentinel->NextChild;
-
-            Sentinel = Sentinel->NextChild;
-        }
-    }
-    
     return(result);
 }
     
-JSONValue *JSONValue::InsertChildLast(JSONValue *element)
+inline bool operator==(JSONString &lhs, const char *rhs)
 {
-    if(!Sentinel)
+    bool result = false;
+    if(strlen(rhs) == lhs.ValueLength)
     {
-        this->ChildrenInit(element);
+        result = (strncmp(lhs.Value, rhs, lhs.ValueLength) == 0);
     }
-    else
-    {
-        element->PrevChild = Sentinel->PrevChild;
-        Sentinel->PrevChild->NextChild = element;
-        
-        element->NextChild = Sentinel;
-        Sentinel->PrevChild = element;
-    }
-
-    return(element);
-}
-
-JSONValue *JSONValue::GetFirstChild()
-{
-    JSONValue *result = Sentinel;
-    MostRecentChild = result->NextChild;
-
-    //! If a child with matching key and of type JSONValue_Array a pointer to this element is returned otherwise null
-    JSONArray *GetArray(char *key);
-    
-    return(result);
-}
-    
-JSONValue *JSONValue::GetFirstChild(char *key, size_t keyLength)
-{
-    JSONValue *result = 0;
-    if(Sentinel)
-    {
-        for(JSONValue *child = this->GetFirstChild();
-            child;
-            child = this->GetNextChild())
-        {
-            if((keyLength == child->KeyLength) &&
-               (strncmp(child->Key, key, child->KeyLength) == 0))
-            {
-                result = child;
-                break;
-            }
-        }
-    }
-        
     return(result);
 }
 
-JSONValue *JSONValue::GetNextChild()
+//
+// JSONNumber
+//
+
+int JSONNumber::GetInt()
 {
-    JSONValue *result = 0;
-    if(MostRecentChild)
+    Assert(IsInteger);
+    return(S64Value);
+}
+
+long long int JSONNumber::GetLong()
+{
+    Assert(IsInteger);
+    return(S64Value);
+}
+
+double JSONNumber::GetDouble()
+{
+    Assert(!IsInteger);
+    return(R64Value);
+}
+
+bool operator==(JSONNumber &lhs, JSONNumber *rhs)
+{
+    bool result = false;
+    if(lhs.IsInteger && rhs->IsInteger)
     {
-        if(MostRecentChild != Sentinel)
-        {
-            result = MostRecentChild;
-            MostRecentChild = result->NextChild;
-        }
+        result = (lhs.S64Value == rhs->S64Value);
     }
-        
+    else if(!lhs.IsInteger && !rhs->IsInteger)
+    {
+        result = (lhs.R64Value == rhs->R64Value);
+    }
+    return(result);
+}
+
+bool operator==(JSONNumber &lhs, long long int rhs)
+{
+    bool result = false;
+    if(lhs.IsInteger) { result = (lhs.S64Value == rhs); }
+    return(result);
+}
+
+bool operator==(JSONNumber &lhs, int rhs)
+{
+    bool result = false;
+    // TODO(joshua): Convert down and check for truncation
+    if(lhs.IsInteger) { result = (lhs.S64Value == rhs); }
+    return(result);
+}
+
+bool operator==(JSONNumber &lhs, double rhs)
+{
+    bool result = false;
+    if(!lhs.IsInteger) { result = (lhs.R64Value == rhs); }
+    return(result);
+}
+
+//
+// JSONLiteral
+//
+
+bool operator==(JSONLiteral &lhs, JSONLiteral *rhs)
+{
+    bool result = (lhs.Value == rhs->Value);
+    return(result);
+}
+
+bool operator==(JSONLiteral &lhs, char *rhs)
+{
+    bool result = false; // TODO(joshua): Implement this => (this->Value == StringToLiteral(rhs));
     return(result);
 }
 

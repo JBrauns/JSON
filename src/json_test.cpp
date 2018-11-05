@@ -89,7 +89,7 @@ void TestBasic(const char *fileName)
                     if(!(*entry == testValue))
                     {
                         ++failCount;
-                        LogMessage("Entry[%d] Value expected=%d is=%d", jsonArrayIndex, testValue, entry->GetInt32());
+                        LogMessage("Entry[%d] Value expected=%d is=%d", jsonArrayIndex, testValue, entry->GetInt());
                     }
                 }
                 --testValue;

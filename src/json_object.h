@@ -69,12 +69,6 @@ struct JSONValue
     JSONValue *Next;
     JSONValue *Prev;
 
-    JSONValue *Sentinel;
-    JSONValue *MostRecentChild;
-
-    JSONValue *NextChild;
-    JSONValue *PrevChild;
-
     //! Constructor
     JSONValue(char *key, size_t keyLength, JSONValueType type);
     
@@ -86,27 +80,6 @@ struct JSONValue
 
     //! Return true if the key is equal to the values key
     bool IsKey(char *key);
-    
-    //! Must be called once to initialize the children dlist. Returns the element itself
-    JSONValue *ChildrenInit(JSONValue *element);
-
-    //! Insert prepend to dlist. Will call ChildrenInit if list is not initialized. Returns the element itself
-    JSONValue *InsertChild(JSONValue *element);
-
-    //! TODO(joshua): Documentation
-    JSONValue *RemoveChild();
-
-    //! Insert append to dlist. Will call ChildrenInit if list is not initialized. Returns the element itself
-    JSONValue *InsertChildLast(JSONValue *element);
-
-    //! Receive the first element of the dlist of children. Is equal to the sentinel
-    JSONValue *GetFirstChild();
-    
-    //! Returns the first child with the specified key. If none is found the result is null
-    JSONValue *GetFirstChild(char *key, size_t keyLength);
-
-    //! Subsequent call this after a call to GetFirstChild. Will return the next children up to the last from then on null
-    JSONValue *GetNextChild();
 };
 
 struct JSONString
@@ -123,27 +96,12 @@ struct JSONString
         strncpy(this->Value, value, this->ValueLength);
         this->Value[this->ValueLength] = 0;
     }
+
+    ~JSONString()
+    {
+        if(Value) { free(Value); Value = 0; }
+    }
 };
-    
-inline bool operator==(JSONString &lhs, JSONString *rhs)
-{
-    bool result = false;
-    if(rhs->ValueLength == lhs.ValueLength)
-    {
-        result = (strncmp(lhs.Value, rhs->Value, lhs.ValueLength) == 0);
-    }
-    return(result);
-}
-    
-inline bool operator==(JSONString &lhs, const char *rhs)
-{
-    bool result = false;
-    if(strlen(rhs) == lhs.ValueLength)
-    {
-        result = (strncmp(lhs.Value, rhs, lhs.ValueLength) == 0);
-    }
-    return(result);
-}
     
 struct JSONNumber
     : JSONValue
@@ -155,6 +113,7 @@ struct JSONNumber
         size_t S64Value;
     };
     
+    //! DOC MISSING
     JSONNumber(char *key, size_t keyLength, double value) :
             JSONValue(key, keyLength, JSONValue_Number)
     {
@@ -162,6 +121,7 @@ struct JSONNumber
         this->IsInteger = false;
     }
     
+    //! DOC MISSING
     JSONNumber(char *key, size_t keyLength, long long int value) :
             JSONValue(key, keyLength, JSONValue_Number)
     {
@@ -169,60 +129,18 @@ struct JSONNumber
         this->IsInteger = true;
     }
 
-    int GetInt32()
-    {
-        Assert(IsInteger);
-        return(S64Value);
-    }
+    //! DOC MISSING
+    ~JSONNumber() {}
 
-    long long int GetInt64()
-    {
-        Assert(IsInteger);
-        return(S64Value);
-    }
+    //! DOC MISSING
+    int GetInt();
 
-    double GetReal64()
-    {
-        Assert(!IsInteger);
-        return(R64Value);
-    }
+    //! DOC MISSING
+    long long int GetLong();
+
+    //! DOC MISSING
+    double GetDouble();
 };
-
-bool operator==(JSONNumber &lhs, JSONNumber *rhs)
-{
-    bool result = false;
-    if(lhs.IsInteger && rhs->IsInteger)
-    {
-        result = (lhs.S64Value == rhs->S64Value);
-    }
-    else if(!lhs.IsInteger && !rhs->IsInteger)
-    {
-        result = (lhs.R64Value == rhs->R64Value);
-    }
-    return(result);
-}
-
-bool operator==(JSONNumber &lhs, long long int rhs)
-{
-    bool result = false;
-    if(lhs.IsInteger) { result = (lhs.S64Value == rhs); }
-    return(result);
-}
-
-bool operator==(JSONNumber &lhs, int rhs)
-{
-    bool result = false;
-    // TODO(joshua): Convert down and check for truncation
-    if(lhs.IsInteger) { result = (lhs.S64Value == rhs); }
-    return(result);
-}
-
-bool operator==(JSONNumber &lhs, double rhs)
-{
-    bool result = false;
-    if(!lhs.IsInteger) { result = (lhs.R64Value == rhs); }
-    return(result);
-}
 
 struct JSONLiteral
     : JSONValue
@@ -233,18 +151,6 @@ struct JSONLiteral
             JSONValue(key, keyLength, JSONValue_Literal)
     {
         this->Value = value;
-    }
-
-    bool operator==(JSONLiteral *rhs)
-    {
-        bool result = (this->Value == rhs->Value);
-        return(result);
-    }
-
-    bool operator==(char *rhs)
-    {
-        bool result = false; // TODO(joshua): Implement this => (this->Value == StringToLiteral(rhs));
-        return(result);
     }
 };
 
