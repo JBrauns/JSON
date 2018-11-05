@@ -6,183 +6,308 @@
    $Notice: $
    ======================================================================== */
 
-bool JSONParser::Parse(JSONObject **parentPtr, bool inObject)
+JSONObject *JSONParser::Parse(const char *fileName)
 {
-    JSONObject *parent = *parentPtr;
-    if(!HasRoot)
+    JSONObject *result = 0;
+    if(!fileName)
     {
         // TODO(joshua): Error handling!
-        JSON_ASSERT(!parent);
-        HasRoot = true;
+        Assert(!"Filename NULL");
+        return(result);
     }
     else
     {
-        // TODO(joshua): Error handling!
-        JSON_ASSERT(parent);
+        Token token = GetNextToken();
+        if(token.Type == TokenType_CurlyBracketOpen)
+        {
+            char *key = "root";
+            result = ParseObject(key, strlen(key));
+            
+            token = GetNextToken();
+            if(token.Type != TokenType_EndOfStream)
+            {
+                // TODO(joshua): Error handling!
+                Assert(!"Expecting EOF after root object!");
+            }
+        }
+        else
+        {
+            // TODO(joshua): Error handling!
+            Assert(!"Expecting EOF after root object!");
+        }
     }
     
-    JSONObject *entry = 0;
-        
-    Token token = this->GetNextJsonToken();
-    while((token.Type != TokenType_Undefined) && (token.Type != TokenType_EndOfStream))
+    return(result);
+}
+
+JSONObject *JSONParser::ParseObject(char *key, size_t keyLength)
+{
+    JSONObject *result = new JSONObject(key, keyLength);
+
+    Token token = GetNextToken();
+    bool inObject = true;
+    while(inObject)
     {
+        char  *key = 0;
+        size_t keyLenght = 0;
+
+        JSONValue *entry = 0;
+        
+        // NOTE(joshua): Key
+        if(token.Type == TokenType_String)
+        {
+            key = token.Text;
+            keyLength = token.Length;
+
+            token = GetNextToken();
+            if(token.Type != TokenType_Colon)
+            {
+                // TODO(joshua): Error handling!
+                Assert(inObject);
+                inObject = false;
+            }
+            else
+            {
+                // NOTE(joshua): Value
+                token = GetNextToken();
+                switch(token.Type)
+                {
+                    case TokenType_String:
+                    {
+                        entry = ParseString(token, key, keyLength);
+                    } break;
+                    
+                    case TokenType_Identifier:
+                    {
+                        entry = ParseLiteral(token, key, keyLength);
+                    } break;
+
+                    case TokenType_Minus:
+                    case TokenType_Number:
+                    {
+                        entry = ParseNumber(token, key, keyLength);
+                    } break;
+
+                    case TokenType_CurlyBracketOpen:
+                    {
+                        entry = ParseObject(key, keyLength);
+                    } break;
+
+                    case TokenType_SquareBracketOpen:
+                    {
+                        entry = ParseArray(key, keyLength);
+                    } break;
+
+                    default:
+                    {
+                        // TODO(joshua): Error handling!
+                        Assert(!"Invalid token type");
+                    } break;
+                }
+            }            
+        }
+        else if(token.Type == TokenType_CurlyBracketClose)
+        {
+            // NOTE(joshua): End object
+            entry = 0;
+            inObject = false;
+        }
+        else
+        {
+            // TODO(joshua): Error handling!
+            Assert(inObject);
+            inObject = false;
+        }
+
+        if(entry)
+        {
+            token = GetNextToken();
+            if((token.Type == TokenType_Comma) || (token.Type == TokenType_CurlyBracketClose))
+            {
+                result->Push(entry);
+
+                if(token.Type == TokenType_Comma)
+                {
+                    token = GetNextToken();
+                }
+            }
+            else
+            {
+                // TODO(joshua): Error handling!
+                Assert(!"Missing comma in object");
+            }
+        }
+    }
+
+    return(result);
+}
+
+JSONArray *JSONParser::ParseArray(char *key, size_t keyLength)
+{
+    JSONArray *result = new JSONArray(key, keyLength);
+    size_t arrayIndex = 0;
+    
+    char memberKey[64];
+    size_t memberKeyLength;
+    
+    Token token = GetNextToken();
+    bool inArray = true;
+    while(inArray)
+    {
+        JSONValue *entry = 0;
         switch(token.Type)
         {
             case TokenType_String:
             {
-                if(!entry)
-                {
-                    entry = new JSONObject(token.Text);
-                            
-                    if(inObject)
-                    {
-                        token = GetNextJsonToken();
-                        // TODO(joshua): Error handling!
-                        JSON_ASSERT(token.Type == TokenType_Colon);
-                    }
-                }
-                else
-                {
-                    entry->String = token.Text;
-                    entry->Type = JSONValue_String;
-                }
+                memberKeyLength = FormatString(memberKey, 64, "%llu", arrayIndex++);
+                entry = ParseString(token, memberKey, memberKeyLength);
+            } break;
+
+            case TokenType_Identifier:
+            {
+                memberKeyLength = FormatString(memberKey, 64, "%llu", arrayIndex++);
+                entry = ParseLiteral(token, memberKey, memberKeyLength);
             } break;
 
             case TokenType_Minus:
             case TokenType_Number:
             {
-                double sign = 1.0;
-                if(TokenType_Minus == token.Type)
-                {
-                    sign = -1.0;
-                    token = GetNextJsonToken();
-                    // TODO(joshua): Error handling!
-                    JSON_ASSERT(token.Type == TokenType_Number);
-                }
-                            
-                entry->Number = atof(token.Text) * sign;
-                entry->Type = JSONValue_Number;
-            } break;
-
-            case TokenType_Identifier:
-            {
-                entry->Type = JSONValue_Literal;
-                entry->Literal = StringToJSONLiteral(token.Text);
-                // TODO(joshua): Error handling!
-                JSON_ASSERT(entry->Literal != JSONLiteral_Invalid);
+                memberKeyLength = FormatString(memberKey, 64, "%llu", arrayIndex++);
+                entry = ParseNumber(token, memberKey, memberKeyLength);
             } break;
 
             case TokenType_CurlyBracketOpen:
             {
-                if(!parent)
-                {
-                    *parentPtr = new JSONObject(StringToHeapMem("root"));
-                    (*parentPtr)->Type = JSONValue_Object;
-                    this->Parse(parentPtr, true);
-                }
-                else
-                {
-                    entry->Type = JSONValue_Object;
-                    if(!this->Parse(&entry))
-                    {
-                        LogMessage("ERROR >> While parsing object");
-                        return(false);
-                    }
-                }
+                memberKeyLength = FormatString(memberKey, 64, "%llu", arrayIndex++);
+                entry = ParseObject(memberKey, memberKeyLength);
             } break;
 
             case TokenType_SquareBracketOpen:
             {
-                entry->Type = JSONValue_Array;
-                if(!this->Parse(&entry, false))
-                {
-                    LogMessage("ERROR >> While parsing array");
-                    return(false);
-                }
+                memberKeyLength = FormatString(memberKey, 64, "%llu", arrayIndex++);
+                entry = ParseArray(memberKey, memberKeyLength);
+            } break;
+
+            case TokenType_SquareBracketClose:
+            {
+                // NOTE(joshua): End array
+                entry = 0;
+                inArray = false;
             } break;
 
             default:
             {
-                // NOTE(joshua): This could be a comma after the last entry in an array/object
                 // TODO(joshua): Error handling!
-                LogMessage("ERROR >> Invalid token");
-                JSON_ASSERT(!"Invalid token");
+                Assert(!"Invalid token type");
             } break;
         }
 
-        token = GetNextJsonToken();
-        if(TokenType_Comma == token.Type)
+        if(entry)
         {
-            if(inObject) { parent->InsertChildLast(entry); }
-            else { parent->InsertChild(entry); }
-            entry = 0;
-
-            token = GetNextJsonToken();
-        }
-        else if(TokenType_SquareBracketClose == token.Type)
-        {
-            if(inObject) { parent->InsertChildLast(entry); }
-            else { parent->InsertChild(entry); }
-            entry = 0;
-
-            // TODO(joshua): Error handling!
-            JSON_ASSERT(!inObject);
-            return(true);
-        }
-        else if(TokenType_CurlyBracketClose == token.Type)
-        {
-            if(inObject) { parent->InsertChildLast(entry); }
-            else { parent->InsertChild(entry); }
-            entry = 0;
-
-            // TODO(joshua): Error handling!
-            JSON_ASSERT(inObject);
-            return(true);
-        }
-    }
-
-    return(true);
-}
-
-Token JSONParser::GetNextJsonToken()
-{
-    Token result = GetNextToken();
-
-    // NOTE(joshua): Handle strings correctly
-    if(result.Type == TokenType_DoubleQuotationMark)
-    {
-        char *stringStart = 0;
-        unsigned int stringLength = StringBetweenToken(result, &stringStart);
-
-        result.Type = TokenType_String;
-        result.Text = _StringToHeapMem(stringStart, stringLength);
-    }
-    else if((result.Type == TokenType_Number) || (result.Type == TokenType_Identifier))
-    {
-        result.Text = _StringToHeapMem(result.Text, result.Length);
-    }
-
-    return(result);
-}
-
-char *JSONParser::ParseString(Token token)
-{
-    char *stringStart = 0;
-    size_t stringLength = StringBetweenToken(token, &stringStart);
+            token = GetNextToken();
+            if((token.Type == TokenType_Comma) || (token.Type == TokenType_SquareBracketClose))
+            {
+                result->Append(entry);
                 
-    char *result = (char *)malloc(stringLength + 1);
-    strncpy(result, stringStart, stringLength);
-    result[stringLength] = 0;
+                if(token.Type == TokenType_Comma)
+                {
+                    token = GetNextToken();
+                }
+            }
+            else
+            {
+                // TODO(joshua): Error handling!
+                Assert(!"Missing comma in array");
+            }
+        }
+    }
 
     return(result);
 }
 
-JSONObject *JSONParser::GetRoot()
+JSONString *JSONParser::ParseString(Token token, char *key, size_t keyLength)
 {
-    unsigned int nameLength = 4;
-    char *rootName = (char *)malloc(nameLength + 1);
-    strncpy(rootName, "root", 4);
-        
-    JSONObject *result = new JSONObject(rootName);
+    JSONString *result = 0;
+    // TODO(joshua): Error handling!
+    Assert(token.Text);
+    result = new JSONString(key, keyLength, token.Text, token.Length);
+
+    return(result);
+}
+    
+JSONNumber *JSONParser::ParseNumber(Token token, char *key, size_t keyLength)
+{
+    JSONNumber *result = 0;
+
+    bool isNegative = false;
+    if(token.Type == TokenType_Minus)
+    {
+        isNegative = true;
+        token = GetNextToken();
+    }
+    Assert(token.Type == TokenType_Number);
+
+    // NOTE(joshua): Check if the number has a fractional or
+    // exponential part
+    char *numberString = token.Text;
+    size_t numberStringLength = token.Length;
+    
+    bool hasFracOrExpPart = false;
+    for(size_t numberStringIndex = 0;
+        numberStringIndex < numberStringLength;
+        ++numberStringIndex)
+    {
+        char at = numberString[numberStringIndex];
+        if((at == '.') || (at == 'e') || (at == 'E'))
+        {
+            hasFracOrExpPart = true;
+            break;
+        }
+    }
+
+    // NOTE(joshua): Convert the number string into a double
+    char *tmp = (char *)malloc((numberStringLength + 1)*sizeof(char));
+    strncpy(tmp, numberString, numberStringLength);
+    tmp[numberStringLength] = 0;
+
+    if(hasFracOrExpPart)
+    {
+        double value = atof(tmp) * (isNegative ? -1.0 : 1.0);
+        result = new JSONNumber(key, keyLength, value);
+    }
+    else
+    {
+        long long int value = 0;
+        if(numberStringLength > 10)
+        {
+            // TODO(joshua): Error handling!
+            Assert(!"Currently no support for an atoll function, stdlib only supports it from c++11 onwards!");
+        }
+        else
+        {
+            value = (long long int)atol(tmp) * (isNegative ? -1 : 1);
+            result = new JSONNumber(key, keyLength, value);
+        }
+    }
+    free(tmp);
+    
+    return(result);
+}
+    
+JSONLiteral *JSONParser::ParseLiteral(Token token, char *key, size_t keyLength)
+{
+    JSONLiteral *result = 0;
+    JSONLiteralType literalType = JSONToLiteral(token.Text, token.Length);
+
+    if(literalType != JSONLiteral_Invalid)
+    {
+        result = new JSONLiteral(key, keyLength, literalType);
+    }
+    else
+    {
+        // TODO(joshua): Error handling!    
+        Assert(!"Invalid literal");
+    }
+    
     return(result);
 }

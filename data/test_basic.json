@@ -3,11 +3,7 @@
     "IntPos" : 42,
     "IntNeg" : -3458,
     "Float"  : 1234.5678,
-    "Array"  : [
-	"Entry1" : 1,
-	"Entry0" : 0,
-	"Entry2" : 2
-    ],
+    "Array"  : [ 4, 3, 2, 1, 0 ],
     "Object" : {
 	"Member0" : true,
 	"Member1" : false,

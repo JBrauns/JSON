@@ -75,6 +75,19 @@ Token Tokenizer::GetNextToken()
 
             result.Length = textLength;
         }
+        else if(*TextAt == '\"')
+        {
+            TextAt++;
+            result.Type = TokenType_String;
+            result.Text = TextAt;
+            result.Length = 0;
+            while(*TextAt != '\"')
+            {
+                ++result.Length;
+                ++TextAt;
+            }
+            ++TextAt;
+        }
         else if(IsNumber(*TextAt))
         {
             result.Type = TokenType_Number;
@@ -128,8 +141,6 @@ Token Tokenizer::GetNextToken()
         }
         else if(*TextAt == '+') { result.Type = TokenType_Plus; result.Text = TextAt++; }
         else if(*TextAt == '-') { result.Type = TokenType_Minus; result.Text = TextAt++; }
-        else if(*TextAt == '\'') { result.Type = TokenType_SingleQuotationMark; result.Text = TextAt++; }
-        else if(*TextAt == '\"') { result.Type = TokenType_DoubleQuotationMark; result.Text = TextAt++; }
         else { result.Type = TokenType_Undefined; result.Text = TextAt++; }
     }
 

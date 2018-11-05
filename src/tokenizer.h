@@ -46,9 +46,6 @@ enum TokenType
     TokenType_Plus,
     TokenType_Minus,
 
-    TokenType_SingleQuotationMark,
-    TokenType_DoubleQuotationMark,
-
     TokenType_EndOfStream,
     
     TokenType_Count

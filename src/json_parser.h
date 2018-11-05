@@ -9,35 +9,33 @@
 
 #define JSON_IDENTIFIER_COMPONENTS 0
 
-#if JSON_DEV_MODE
-#define JSON_ASSERT(expr) if(!(expr)) *(int *)0 = 0;
-#else
-#define JSON_ASSERT(expr)
-#endif
+#define FormatString(...) _snprintf(__VA_ARGS__);
 
 class JSONParser :
     public Tokenizer
 {
-private:
-    bool HasRoot;
-    
 public:
     JSONParser(const char *fileName) :
-            Tokenizer(fileName, JSON_IDENTIFIER_COMPONENTS),
-            HasRoot(false) {}
+            Tokenizer(fileName, JSON_IDENTIFIER_COMPONENTS) {}
     ~JSONParser() {}
 
     //! Parse the complete json file into a json root object
-    bool Parse(JSONObject **parent, bool inObject = true);
+    JSONObject *Parse(const char *fileName);
 
-    //! Expecially for string handling
-    Token GetNextJsonToken();
+    //! Parse a JSON object
+    JSONObject *ParseObject(char *key, size_t keyLength);
+
+    //! Parse a JSON array
+    JSONArray *ParseArray(char *key, size_t keyLength);
     
     //! Parse a string
-    char *ParseString(Token token);
-
-    //! Get a root json object
-    JSONObject *GetRoot();
+    JSONString *ParseString(Token startToken, char *key, size_t keyLength);
+    
+    //! Parse a string
+    JSONNumber *ParseNumber(Token token, char *key, size_t keyLength);
+    
+    //! Parse a string
+    JSONLiteral *ParseLiteral(Token token, char *key, size_t keyLength);
 };
 
 #define JSON_PARSER_H

@@ -15,6 +15,12 @@
 
 #define internal static
 
+#if JSON_DEV_MODE
+#define Assert(expr) if(!(expr)) { *(int *)0 = 0; }
+#else
+#define Assert(expr) if(!(expr)) { printf("Assert[%s]:" # expr "\n", __FUNCTION__); }
+#endif
+
 #include "json_platform.h"
 #include "tokenizer.h"
 #include "json_object.h"
